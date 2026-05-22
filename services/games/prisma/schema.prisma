@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+  output = "../node_modules/@prisma/client-games"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Round {
+  id          String      @id @default(uuid())
+  status      RoundStatus @default(BETTING_PHASE)
+  crashPoint  Decimal?    // Ponto onde vai estourar (ex: 2.50)
+  serverSeed  String      // Para a matemática do Provably Fair
+  clientSeed  String?     // Para a matemática do Provably Fair
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  bets        Bet[]
+
+  @@map("rounds")
+}
+
+model Bet {
+  id                String    @id @default(uuid())
+  roundId           String
+  userId            String    // ID do usuário do Keycloak
+  amount            BigInt    // Em centavos!
+  cashOutMultiplier Decimal?  // Em qual multiplicador ele clicou em "Sacar"
+  winAmount         BigInt?   // Quanto ele ganhou (em centavos)
+  status            BetStatus @default(PENDING)
+  createdAt         DateTime  @default(now())
+
+  round             Round     @relation(fields: [roundId], references: [id])
+
+  @@map("bets")
+}
+
+//  O BÔNUS DO DESAFIO: OUTBOX PATTERN!
+model OutboxEvent {
+  id          String   @id @default(uuid())
+  topic       String   // Tópico do RabbitMQ (ex: "wallet.deduct")
+  payload     Json     // Dados do evento (quem apostou e quanto)
+  published   Boolean  @default(false) // Se o RabbitMQ já recebeu ou não
+  createdAt   DateTime @default(now())
+
+  @@map("outbox_events")
+}
+
+enum RoundStatus {
+  BETTING_PHASE // Aceitando apostas
+  IN_PROGRESS   // Gráfico subindo
+  CRASHED       // Estourou
+}
+
+enum BetStatus {
+  PENDING    // Aguardando a Wallet aprovar o débito
+  ACCEPTED   // Wallet aprovou, aposta valendo!
+  CASHED_OUT // Jogador sacou a tempo (Ganhou)
+  LOST       // Jogador foi ganancioso e estourou (Perdeu)
+  REJECTED   // Jogador não tinha saldo na Wallet
+}

@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+  output = "../node_modules/@prisma/client/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String   @unique // ID do usuário que virá do Keycloak (JWT)
+  balance   BigInt   @default(0) //  O SEGREDO ESTÁ AQUI: BigInt para centavos!
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id        String          @id @default(uuid())
+  walletId  String
+  amount    BigInt          // Positivo para crédito, Negativo para débito
+  type      TransactionType
+  reference String?         // Referência externa (ex: ID da rodada)
+  createdAt DateTime        @default(now())
+
+  wallet    Wallet          @relation(fields: [walletId], references: [id])
+
+  @@map("wallet_transactions")
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  BET
+  WIN
+}
+

@@ -12,10 +12,14 @@
     "@nestjs/common": "^11.1.17",
     "@nestjs/core": "^11.1.17",
     "@nestjs/platform-express": "^11.1.17",
+    "@prisma/client": "6",
+    "dotenv": "^16.1.4",
+    "prisma": "6",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@types/node": "^20.11.0",
     "bun-types": "latest",
     "typescript": "^5.8.3"
   }
