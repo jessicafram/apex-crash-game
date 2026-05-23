@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, HttpException, HttpStatus } from "@nestjs/common";
+import { Controller, Get, Post, Body, HttpException, HttpStatus, UseGuards, Req } from "@nestjs/common";
+import { AuthGuard } from '@nestjs/passport';
 import { HealthCheckResponseDto } from "../dtos/health-check-response.dto";
 import { PlaceBetUseCase } from '../../application/use-cases/place-bet.use-case';
 import { CashOutUseCase } from '../../application/use-cases/cash-out.use-case';
 import { GameEngineService } from '../../application/services/game-engine.service';
+import { ProvablyFairService } from '../../domain/services/provably-fair.service';
 
 export class BetDto { amount!: number; roundId!: string; }
 export class CashOutDto { betId!: string; }
@@ -12,43 +14,43 @@ export class GamesController {
   constructor(
     private readonly placeBetUseCase: PlaceBetUseCase,
     private readonly cashOutUseCase: CashOutUseCase,
-    private readonly gameEngine: GameEngineService // O Controller olha pro motor do jogo!
-  ) { }
+    private readonly gameEngine: GameEngineService 
+  ) {}
 
   @Get("health")
-  check(): HealthCheckResponseDto {
-    return { status: "ok", service: "games" };
-  }
+  check(): HealthCheckResponseDto { return { status: "ok", service: "games" }; }
 
   @Get("games/current-round")
   getCurrentRound() {
-    // Pro Front-end saber o que tá rolando na mesa agora!
-    return {
-      roundId: this.gameEngine.currentRoundId,
-      multiplier: this.gameEngine.currentMultiplier
-    };
+    return { roundId: this.gameEngine.currentRoundId, multiplier: this.gameEngine.currentMultiplier };
   }
 
+  // 🔒 ROTA PROTEGIDA!
+  @UseGuards(AuthGuard('jwt'))
   @Post('games/bet')
-  async placeBet(@Body() body: BetDto) {
+  async placeBet(@Body() body: BetDto, @Req() req: any) {
+    const userId = req.user.userId; 
+
     try {
-      const bet = await this.placeBetUseCase.execute(body.roundId, "usuario-teste-123", BigInt(body.amount));
+      const bet = await this.placeBetUseCase.execute(body.roundId, userId, BigInt(body.amount));
       return { message: 'Aposta registrada!', betId: bet.id };
     } catch (error: any) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
+  // 🔒 ROTA PROTEGIDA!
+  @UseGuards(AuthGuard('jwt'))
   @Post('games/cashout')
-  async cashOut(@Body() body: CashOutDto) {
+  async cashOut(@Body() body: CashOutDto, @Req() req: any) {
+    const userId = req.user.userId; 
+
     try {
-      // Pega o multiplicador exato daquele milissegundo!
-      const currentMultiplier = this.gameEngine.currentMultiplier;
-
-      const bet = await this.cashOutUseCase.execute(body.betId, "usuario-teste-123", currentMultiplier);
-
-      return {
-        message: 'SAQUE REALIZADO COM SUCESSO! 🤑',
+      const currentMultiplier = this.gameEngine.currentMultiplier; 
+      const bet = await this.cashOutUseCase.execute(body.betId, userId, currentMultiplier);
+      
+      return { 
+        message: 'SAQUE REALIZADO COM SUCESSO! 🤑', 
         ganho: Number(bet.winAmount) / 100,
         multiplicador: currentMultiplier
       };

@@ -6,6 +6,7 @@ import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.enableCors();
 
   const rabbitMqUrl = process.env.RABBITMQ_URL || 'amqp://admin:admin@localhost:5672';
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 4001;

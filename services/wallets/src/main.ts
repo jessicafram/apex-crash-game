@@ -1,10 +1,11 @@
-import 'dotenv/config'; 
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.enableCors();
 
   // Garantindo os tipos exatos pro TypeScript parar de chorar
   const rabbitMqUrl = process.env.RABBITMQ_URL || 'amqp://admin:admin@localhost:5672';

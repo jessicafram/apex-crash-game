@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ScheduleModule } from '@nestjs/schedule';
+import { PassportModule } from '@nestjs/passport'; // 👈 Aqui
 import { GamesController } from './presentation/controllers/games.controller';
 import { GameEventsController } from './presentation/controllers/game-events.controller';
 import { GameGateway } from './presentation/gateways/game.gateway';
@@ -10,10 +11,12 @@ import { PrismaGameRepository } from './infrastructure/database/prisma-game.repo
 import { PrismaService } from './infrastructure/database/prisma.service';
 import { OutboxWorker } from './infrastructure/messaging/outbox.worker';
 import { GameEngineService } from './application/services/game-engine.service';
+import { JwtStrategy } from './presentation/auth/jwt.strategy';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
+    PassportModule,
     ClientsModule.register([
       {
         name: 'RABBITMQ_SERVICE',
@@ -35,6 +38,7 @@ import { GameEngineService } from './application/services/game-engine.service';
     PrismaGameRepository,
     PrismaService,
     OutboxWorker,
+    JwtStrategy,
     {
       provide: 'IGameRepository',
       useExisting: PrismaGameRepository,
